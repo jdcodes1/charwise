@@ -37,12 +37,22 @@ function sameRef(a: PrRef, b: PrRef): boolean {
   return a.owner === b.owner && a.repo === b.repo && a.number === b.number;
 }
 
+function isRecentPr(value: unknown): value is RecentPr {
+  if (typeof value !== "object" || value === null) return false;
+  const entry = value as Record<string, unknown>;
+  if (typeof entry.label !== "string") return false;
+  const ref = entry.ref;
+  if (typeof ref !== "object" || ref === null) return false;
+  const r = ref as Record<string, unknown>;
+  return typeof r.owner === "string" && typeof r.repo === "string" && typeof r.number === "number";
+}
+
 export function getRecentPrs(): RecentPr[] {
   const raw = localStorage.getItem(RECENT_KEY);
   if (!raw) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as RecentPr[]) : [];
+    return Array.isArray(parsed) ? parsed.filter(isRecentPr) : [];
   } catch {
     return [];
   }

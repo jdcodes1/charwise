@@ -8,5 +8,10 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/setupTests.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    poolOptions: {
+      forks: {
+        execArgv: ["--no-experimental-webstorage"],
+      },
+    },
   },
 });

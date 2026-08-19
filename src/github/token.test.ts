@@ -79,6 +79,20 @@ describe("recent PRs", () => {
     localStorage.setItem("charwise.recent", "{{{");
     expect(getRecentPrs()).toEqual([]);
   });
+
+  it("filters out malformed entries, keeping only well-formed ones", () => {
+    localStorage.setItem(
+      "charwise.recent",
+      JSON.stringify([
+        { foo: "bar" },
+        42,
+        null,
+        { ref: { owner: "o", repo: "r", number: 1 }, label: "o/r#1 Good" },
+        { ref: { owner: "o", repo: "r" }, label: "Missing number" },
+      ]),
+    );
+    expect(getRecentPrs()).toEqual([{ ref: { owner: "o", repo: "r", number: 1 }, label: "o/r#1 Good" }]);
+  });
 });
 
 describe("clearAllLocalData", () => {
