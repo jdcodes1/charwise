@@ -101,6 +101,33 @@ describe("Review above the auto-expand cap", () => {
     expect(container.querySelectorAll(".file-tree li")).toHaveLength(FILES_AUTO_EXPAND + 5);
     expect(container.querySelectorAll("table.diff")).toHaveLength(0);
   });
+
+  it("offers a visible way into a collapsed file, not just a caret", async () => {
+    const { container } = render(<Review pr={many} />);
+    const shows = screen.getAllByRole("button", { name: /show diff/i });
+    expect(shows).toHaveLength(FILES_AUTO_EXPAND + 5);
+    await userEvent.click(shows[0]);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(1);
+  });
+
+  it("expands and collapses every file at once", async () => {
+    const { container } = render(<Review pr={many} />);
+    await userEvent.click(screen.getByRole("button", { name: /expand all/i }));
+    expect(container.querySelectorAll("table.diff")).toHaveLength(FILES_AUTO_EXPAND + 5);
+    await userEvent.click(screen.getByRole("button", { name: /collapse all/i }));
+    expect(container.querySelectorAll("table.diff")).toHaveLength(0);
+  });
+});
+
+describe("Review at a realistic PR size", () => {
+  // A real 46-file PR opened as a wall of collapsed headers and read as a
+  // broken app. The literal 46 is deliberate: asserting against the constant
+  // would let a future cap change silently reintroduce exactly this.
+  it("opens a 46-file PR with its diffs showing", () => {
+    const { container } = render(<Review pr={prWith(46)} />);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(46);
+    expect(screen.queryAllByRole("button", { name: /show diff/i })).toHaveLength(0);
+  });
 });
 
 describe("Review at or below the auto-expand cap", () => {

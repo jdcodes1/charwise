@@ -54,6 +54,13 @@ export default function FileDiffPanel({
           Viewed
         </label>
       </div>
+      {!expanded && !viewed && (
+        // A bare caret was not enough of an affordance: a 46-file PR opened as
+        // a wall of headers and read as an app that had failed to load.
+        <button type="button" className="show-diff" onClick={onToggleExpanded}>
+          Show diff
+        </button>
+      )}
       {!file ? null : file.noPatch ? (
         <p className="no-patch">
           <span>{NO_PATCH_MESSAGE[file.noPatch]}</span>{" "}

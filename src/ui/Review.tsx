@@ -106,6 +106,17 @@ export default function Review({ pr }: { pr: GhPr }) {
         <span className="pr-title">
           {pr.ref.owner}/{pr.ref.repo}#{pr.ref.number} · {pr.title}
         </span>
+        <button
+          type="button"
+          className="expand-all"
+          onClick={() =>
+            setExpanded((current) =>
+              current.size === inputs.length ? new Set() : new Set(inputs.map((file) => file.path)),
+            )
+          }
+        >
+          {expanded.size === inputs.length ? "Collapse all" : "Expand all"}
+        </button>
         <div className="seg" role="group" aria-label="Layout">
           <button type="button" aria-pressed={layout === "split"} onClick={() => setLayout("split")}>
             Split

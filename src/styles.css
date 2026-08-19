@@ -162,7 +162,7 @@ td.gap {
   padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--surface);
 }
 .pr-title { font-weight: 600; }
-.seg { margin-left: auto; display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 2px; gap: 2px; }
+.seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 2px; gap: 2px; }
 .seg button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; border-radius: 6px; padding: 5px 13px; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); }
 .review-body { display: grid; grid-template-columns: 260px minmax(0, 1fr); flex: 1; min-height: 0; }
@@ -176,3 +176,31 @@ td.gap {
 .files { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 .status { padding: 64px 24px; text-align: center; color: var(--muted); }
 .empty { color: var(--muted); padding: 24px; text-align: center; margin: 0; }
+
+/* A collapsed file needs a visible way in — a caret alone reads as a dead row. */
+.show-diff {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.show-diff:hover { background: var(--surface-2); }
+.expand-all {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.expand-all:hover { color: var(--ink); }

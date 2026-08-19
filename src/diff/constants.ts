@@ -54,5 +54,10 @@ export const BINARY_EXTENSIONS = [
  * common case, where building all rows costs a few hundred milliseconds.
  * Larger PRs open collapsed, because building every file up front blocks the
  * main thread for seconds with no spinner.
+ *
+ * Set to 20 at first, which was too low: a routine 46-file PR opened as a wall
+ * of collapsed headers and read as a broken app. Real PRs run large, and a few
+ * hundred milliseconds on open is a far better trade than hiding the diff the
+ * reader came for. The cap now only catches the genuinely enormous.
  */
-export const FILES_AUTO_EXPAND = 20;
+export const FILES_AUTO_EXPAND = 75;
