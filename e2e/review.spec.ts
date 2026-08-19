@@ -44,7 +44,7 @@ test("contacts no host other than api.github.com", async ({ page }) => {
   const foreign: string[] = [];
   page.on("request", (request) => {
     const host = new URL(request.url()).host;
-    if (!/^(api\.github\.com|localhost:5173|127\.0\.0\.1:5173)$/.test(host)) foreign.push(request.url());
+    if (!/^(api\.github\.com|localhost:5273|127\.0\.0\.1:5273)$/.test(host)) foreign.push(request.url());
   });
 
   await page.goto("/");
