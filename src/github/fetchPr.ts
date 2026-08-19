@@ -23,7 +23,6 @@ interface RawFile {
 interface RawPr {
   title: string;
   head: { sha: string };
-  base: { sha: string };
 }
 
 function toGitHubError(response: Response): GitHubError {
@@ -96,5 +95,5 @@ export async function fetchPr(ref: PrRef, token: string, fetchImpl: typeof fetch
     }
   }
 
-  return { ref, title: pr.title, headSha: pr.head.sha, baseSha: pr.base.sha, files };
+  return { ref, title: pr.title, headSha: pr.head.sha, files };
 }

@@ -13,7 +13,14 @@ export function useKeyboardNav(handlers: NavHandlers): void {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      // A checkbox is an INPUT but swallows no typing, and the Viewed control
+      // keeps focus after a click — so suppressing on it stopped j/k until the
+      // reader clicked somewhere else.
+      const typing =
+        target !== null &&
+        /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) &&
+        !(target instanceof HTMLInputElement && target.type === "checkbox");
+      if (typing) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
 
       switch (event.key) {

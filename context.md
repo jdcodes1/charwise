@@ -34,7 +34,7 @@ not a tradeoff:
 Static SPA, no backend. Read-only — nothing in this codebase writes to GitHub.
 
 `src/diff/` is the product: pure TypeScript, no React, no DOM, no dependencies.
-`src/purity.test.ts` enforces that. Dependency order within it is strict:
+`src/diff/purity.test.ts` enforces that. Dependency order within it is strict:
 
 `constants` → `lcs` → `tokenize` → `refine` → `parsePatch` → `pairLines` → `index`
 
@@ -83,6 +83,19 @@ changes the look of every diff — the tests in `src/diff/refine.test.ts` and
   within the window still pairs; a move past it degrades to unpaired rather
   than a wrong pairing.
 
+## Rendering cost
+
+`buildFileDiff` runs per file, not per PR. Panels start collapsed and each one
+parses its own patch inside its own `useMemo` only while it is open, so opening
+a PR costs nothing beyond the metadata. Building all 300 files at GitHub's cap
+during one render measured 3,504 ms of blocked main thread and 13,500 mounted
+rows, with `isPending` already false so nothing on screen said the tab was
+working; collapsed, the same PR renders in 246 ms with no rows, and expanding
+one file costs about 78 ms. The file tree, the filter, keyboard navigation and
+the viewed marks all run off metadata and force no build.
+
+There is no virtualizer: a single very long file still mounts all its rows.
+
 ## Cost
 
 Zero infrastructure. GitHub's API allows 5,000 authenticated requests per hour;
@@ -93,7 +106,9 @@ one PR costs 1 + ceil(files / 100) requests, and results are cached 5 minutes.
 - Posting comments, approving, merging — review is still submitted on GitHub
 - Syntax highlighting
 - Local git repos, pasted diffs, file uploads
-- Blob fallback for files GitHub omits a patch for — they render "diff too large"
+- Blob fallback for files GitHub omits a patch for. The panel says *why* there
+  is no diff (renamed, no content change, binary, or genuinely too large) and
+  links to the file on GitHub, but does not fetch the blob.
 - Hunk-level `j`/`k`; today those keys move between files
 - Unlimited viewed-mark history — marks are kept for the 20 most recent head
   SHAs only (`MAX_SHAS` in `src/state/useViewedFiles.ts`). One key per SHA

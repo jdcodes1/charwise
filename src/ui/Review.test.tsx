@@ -8,7 +8,6 @@ const pr: GhPr = {
   ref: { owner: "o", repo: "r", number: 5 },
   title: "Raise the timeout",
   headSha: "head1",
-  baseSha: "base1",
   files: [
     {
       filename: "src/api/client.ts",

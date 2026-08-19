@@ -65,10 +65,17 @@ export function addRecentPr(ref: PrRef, title: string): void {
   localStorage.setItem(RECENT_KEY, JSON.stringify(next));
 }
 
-/** Wipes every trace of this app from the browser. Used by "Clear local data". */
+/**
+ * Wipes every trace of this app from the browser. Used by "Clear local data".
+ * Both stores, not just localStorage: no non-token session key exists today,
+ * but this is the control the privacy promise rests on and it must not be
+ * store-specific for the next key that does.
+ */
 export function clearAllLocalData(): void {
   clearToken();
-  for (const key of Object.keys(localStorage)) {
-    if (key.startsWith("charwise.")) localStorage.removeItem(key);
+  for (const store of [localStorage, sessionStorage]) {
+    for (const key of Object.keys(store)) {
+      if (key.startsWith("charwise.")) store.removeItem(key);
+    }
   }
 }

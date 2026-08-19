@@ -57,3 +57,31 @@ describe("useKeyboardNav", () => {
     expect(h.onToggleLayout).not.toHaveBeenCalled();
   });
 });
+
+describe("useKeyboardNav and checkboxes", () => {
+  // Clicking the Viewed checkbox leaves focus on it, and it is an INPUT, so
+  // j/k stopped working until the reader clicked somewhere else.
+  it("still navigates while a checkbox has focus", () => {
+    const h = handlers();
+    renderHook(() => useKeyboardNav(h));
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    document.body.appendChild(checkbox);
+    press("j", checkbox);
+    press("k", checkbox);
+    expect(h.onNextFile).toHaveBeenCalledOnce();
+    expect(h.onPrevFile).toHaveBeenCalledOnce();
+    checkbox.remove();
+  });
+
+  it("still suppresses while a text field has focus", () => {
+    const h = handlers();
+    renderHook(() => useKeyboardNav(h));
+    const text = document.createElement("input");
+    text.type = "text";
+    document.body.appendChild(text);
+    press("j", text);
+    expect(h.onNextFile).not.toHaveBeenCalled();
+    text.remove();
+  });
+});

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const PR = { title: "Raise the timeout", head: { sha: "head1" }, base: { sha: "base1" } };
+const PR = { title: "Raise the timeout", head: { sha: "head1" } };
 
 const FILES = [
   {

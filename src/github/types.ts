@@ -19,7 +19,6 @@ export interface GhPr {
   ref: PrRef;
   title: string;
   headSha: string;
-  baseSha: string;
   files: GhFile[];
 }
 

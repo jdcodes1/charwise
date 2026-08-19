@@ -10,7 +10,7 @@ const json = (body: unknown, init: { status?: number; headers?: Record<string, s
     headers: { "content-type": "application/json", ...(init.headers ?? {}) },
   });
 
-const prBody = { title: "Speed up the loader", head: { sha: "head1" }, base: { sha: "base1" } };
+const prBody = { title: "Speed up the loader", head: { sha: "head1" } };
 
 const file = (n: number) => ({
   filename: `src/f${n}.ts`,
@@ -29,7 +29,6 @@ describe("fetchPr", () => {
     const pr = await fetchPr(REF, "tok", fetchImpl);
     expect(pr.title).toBe("Speed up the loader");
     expect(pr.headSha).toBe("head1");
-    expect(pr.baseSha).toBe("base1");
     expect(pr.files.map((f) => f.filename)).toEqual(["src/f1.ts"]);
   });
 

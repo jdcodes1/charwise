@@ -110,3 +110,19 @@ describe("clearAllLocalData", () => {
     expect(localStorage.getItem("unrelated")).toBe("keep me");
   });
 });
+
+describe("clearAllLocalData across both stores", () => {
+  // The privacy control must not be store-specific: whatever charwise.* key
+  // lands in sessionStorage next, "Clear local data" has to take it too.
+  it("sweeps charwise keys out of sessionStorage as well as localStorage", () => {
+    localStorage.setItem("charwise.viewed", "[]");
+    sessionStorage.setItem("charwise.scratch", "x");
+    sessionStorage.setItem("someone-else.key", "keep");
+
+    clearAllLocalData();
+
+    expect(localStorage.getItem("charwise.viewed")).toBeNull();
+    expect(sessionStorage.getItem("charwise.scratch")).toBeNull();
+    expect(sessionStorage.getItem("someone-else.key")).toBe("keep");
+  });
+});

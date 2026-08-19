@@ -47,7 +47,8 @@ body {
   line-height: 1.55;
 }
 
-code, pre, table.diff, textarea, input[type="url"], input[type="password"] {
+/* The URL field is deliberately type="text", not type="url" — see PrLoader. */
+code, pre, table.diff, textarea, .loader-form input[type="text"], input[type="password"] {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
