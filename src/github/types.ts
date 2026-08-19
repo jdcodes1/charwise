@@ -23,7 +23,7 @@ export interface GhPr {
   files: GhFile[];
 }
 
-export type GitHubErrorCode = "auth" | "notfound" | "ratelimit" | "unknown";
+export type GitHubErrorCode = "auth" | "notfound" | "ratelimit" | "network" | "unknown";
 
 export class GitHubError extends Error {
   readonly code: GitHubErrorCode;

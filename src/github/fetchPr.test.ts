@@ -92,6 +92,38 @@ describe("fetchPr", () => {
     expect((error as GitHubError).resetAt?.toISOString()).toBe("2026-08-18T12:00:00.000Z");
   });
 
+  it("stops instead of looping forever when every page is full", async () => {
+    const full = Array.from({ length: 100 }, (_, i) => file(i));
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/files") ? json(full) : json(prBody),
+    ) as unknown as typeof fetch;
+
+    await expect(fetchPr(REF, "tok", fetchImpl)).rejects.toMatchObject({ code: "unknown" });
+  });
+
+  it("maps a network-level rejection to a typed error", async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError("Failed to fetch");
+    }) as unknown as typeof fetch;
+
+    const error = await fetchPr(REF, "tok", fetchImpl).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(GitHubError);
+    expect((error as GitHubError).code).toBe("network");
+  });
+
+  it("maps an unreadable body to a typed error", async () => {
+    const fetchImpl = vi.fn(async () => new Response("not json", { status: 200 })) as unknown as typeof fetch;
+    await expect(fetchPr(REF, "tok", fetchImpl)).rejects.toBeInstanceOf(GitHubError);
+  });
+
+  it("maps a wrong-shaped files payload to a typed error", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/files") ? json({ message: "not an array" }) : json(prBody),
+    ) as unknown as typeof fetch;
+
+    await expect(fetchPr(REF, "tok", fetchImpl)).rejects.toBeInstanceOf(GitHubError);
+  });
+
   it("throws unknown for any other failure", async () => {
     const fetchImpl = vi.fn(async () => json({ message: "boom" }, { status: 500 })) as unknown as typeof fetch;
     await expect(fetchPr(REF, "tok", fetchImpl)).rejects.toMatchObject({ code: "unknown" });
