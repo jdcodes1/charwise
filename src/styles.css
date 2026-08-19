@@ -1,0 +1,52 @@
+:root {
+  --bg: #f6f5fb;
+  --surface: #ffffff;
+  --surface-2: #f0eef8;
+  --ink: #17151f;
+  --muted: #6c6883;
+  --line: #e3e0ee;
+  --accent: #5a4fcf;
+  --accent-soft: #eae7fb;
+  --del-bg: #fdeef2;
+  --del-hi: #f6b4ca;
+  --del-ink: #8c1d42;
+  --add-bg: #e9f7f0;
+  --add-hi: #93deb8;
+  --add-ink: #12603b;
+  --gut: #a29db8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #100e17;
+    --surface: #191725;
+    --surface-2: #211e2f;
+    --ink: #e9e7f2;
+    --muted: #9995af;
+    --line: #2c2939;
+    --accent: #9c92ff;
+    --accent-soft: #241f3d;
+    --del-bg: #2a1420;
+    --del-hi: #7c2648;
+    --del-ink: #ffb6cc;
+    --add-bg: #0f271d;
+    --add-hi: #1e6d49;
+    --add-ink: #96e6be;
+    --gut: #625d7a;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+code, pre, table.diff, textarea, input[type="url"], input[type="password"] {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
