@@ -1,4 +1,6 @@
-import type { FileDiff, Layout, NoPatchReason } from "../diff";
+import { useMemo } from "react";
+import { buildFileDiff } from "../diff";
+import type { FileDiffInput, Layout, NoPatchReason } from "../diff";
 import DiffRow from "./DiffRow";
 
 const NO_PATCH_MESSAGE: Record<NoPatchReason, string> = {
@@ -9,33 +11,50 @@ const NO_PATCH_MESSAGE: Record<NoPatchReason, string> = {
 };
 
 export default function FileDiffPanel({
-  file,
+  input,
   blobUrl,
   layout,
   viewed,
+  expanded,
   onToggleViewed,
+  onToggleExpanded,
 }: {
-  file: FileDiff;
+  /** Raw metadata and patch. Rows are built here, only once expanded. */
+  input: FileDiffInput;
   /** The file on GitHub — the only way to read a file we cannot diff. */
   blobUrl?: string;
   layout: Layout;
   viewed: boolean;
+  expanded: boolean;
   onToggleViewed: () => void;
+  onToggleExpanded: () => void;
 }) {
-  const label = file.oldPath !== file.path ? `${file.oldPath} → ${file.path}` : file.path;
+  const label = input.oldPath !== input.path ? `${input.oldPath} → ${input.path}` : input.path;
+  const open = expanded && !viewed;
+
+  // The whole point of the disclosure: parsing, pairing and refining one file
+  // is tens of milliseconds, and doing all 300 of them inside one render blocked
+  // the main thread for seconds with no spinner, because the query had already
+  // resolved. Nothing is computed for a file the reader has not opened.
+  const file = useMemo(() => (open ? buildFileDiff(input) : null), [input, open]);
 
   return (
-    <section className="panel" id={`file-${file.path}`}>
+    <section className="panel" id={`file-${input.path}`}>
       <div className="panel-bar">
-        <span className="path">{label}</span>
-        <span className="count add-count">+{file.additions}</span>
-        <span className="count del-count">−{file.deletions}</span>
+        <button type="button" className="disclosure" aria-expanded={expanded} onClick={onToggleExpanded}>
+          <span className="caret" aria-hidden="true">
+            {expanded ? "▾" : "▸"}
+          </span>
+          <span className="path">{label}</span>
+        </button>
+        <span className="count add-count">+{input.additions}</span>
+        <span className="count del-count">−{input.deletions}</span>
         <label className="viewed">
           <input type="checkbox" checked={viewed} onChange={onToggleViewed} />
           Viewed
         </label>
       </div>
-      {viewed ? null : file.noPatch ? (
+      {!file ? null : file.noPatch ? (
         <p className="no-patch">
           <span>{NO_PATCH_MESSAGE[file.noPatch]}</span>{" "}
           {blobUrl && (

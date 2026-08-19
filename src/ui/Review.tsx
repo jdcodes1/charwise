@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { buildFileDiff } from "../diff";
-import type { Layout } from "../diff";
+import type { FileDiffInput, Layout } from "../diff";
 import type { GhPr } from "../github/types";
 import { blobUrl } from "../github/url";
 import { useKeyboardNav } from "../state/useKeyboardNav";
@@ -12,30 +11,43 @@ export default function Review({ pr }: { pr: GhPr }) {
   const [layout, setLayout] = useState<Layout>("split");
   const [filter, setFilter] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  // Panels start collapsed and nothing is parsed until one is opened. See the
+  // useMemo in FileDiffPanel.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set<string>());
   const filterRef = useRef<HTMLInputElement>(null);
   const { viewed, toggle } = useViewedFiles(pr.headSha);
 
-  const diffs = useMemo(
+  // Metadata only — a rename, a count and a path. The file tree, the filter,
+  // navigation and the viewed marks all work from this without any file's
+  // patch ever being parsed.
+  const inputs = useMemo<FileDiffInput[]>(
     () =>
-      pr.files.map((file) =>
-        buildFileDiff({
-          path: file.filename,
-          oldPath: file.previousFilename ?? file.filename,
-          status: file.status,
-          additions: file.additions,
-          deletions: file.deletions,
-          patch: file.patch,
-        }),
-      ),
+      pr.files.map((file) => ({
+        path: file.filename,
+        oldPath: file.previousFilename ?? file.filename,
+        status: file.status,
+        additions: file.additions,
+        deletions: file.deletions,
+        patch: file.patch,
+      })),
     [pr.files],
   );
+
+  const toggleExpanded = useCallback((path: string) => {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }, []);
 
   const select = useCallback(
     (index: number) => {
       setActiveIndex(index);
-      document.getElementById(`file-${diffs[index]?.path}`)?.scrollIntoView({ block: "start" });
+      document.getElementById(`file-${inputs[index]?.path}`)?.scrollIntoView({ block: "start" });
     },
-    [diffs],
+    [inputs],
   );
 
   // Indexes of the files the filter currently leaves on screen. Navigation
@@ -43,10 +55,10 @@ export default function Review({ pr }: { pr: GhPr }) {
   // the reader like the keypress did nothing.
   const visible = useMemo(() => {
     const needle = filter.toLowerCase();
-    return diffs
+    return inputs
       .map((_, index) => index)
-      .filter((index) => needle === "" || diffs[index].path.toLowerCase().includes(needle));
-  }, [diffs, filter]);
+      .filter((index) => needle === "" || inputs[index].path.toLowerCase().includes(needle));
+  }, [inputs, filter]);
 
   const step = useCallback(
     (delta: number) => {
@@ -68,12 +80,12 @@ export default function Review({ pr }: { pr: GhPr }) {
       onPrevFile: () => step(-1),
       onToggleLayout: () => setLayout((l) => (l === "split" ? "unified" : "split")),
       onToggleViewed: () => {
-        const path = diffs[activeIndex]?.path;
+        const path = inputs[activeIndex]?.path;
         if (path) toggle(path);
       },
       onFocusFilter: () => filterRef.current?.focus(),
     }),
-    [activeIndex, diffs, step, toggle],
+    [activeIndex, inputs, step, toggle],
   );
 
   useKeyboardNav(handlers);
@@ -95,7 +107,7 @@ export default function Review({ pr }: { pr: GhPr }) {
       </header>
       <div className="review-body">
         <FileTree
-          files={diffs.map((d) => ({ path: d.path, additions: d.additions, deletions: d.deletions }))}
+          files={inputs.map((f) => ({ path: f.path, additions: f.additions, deletions: f.deletions }))}
           viewed={viewed}
           activeIndex={activeIndex}
           filter={filter}
@@ -104,16 +116,22 @@ export default function Review({ pr }: { pr: GhPr }) {
           filterRef={filterRef}
         />
         <div className="files">
-          {diffs.map((file) => (
-            <FileDiffPanel
-              key={file.path}
-              file={file}
-              blobUrl={blobUrl(pr.ref, pr.headSha, file.path)}
-              layout={layout}
-              viewed={viewed.has(file.path)}
-              onToggleViewed={() => toggle(file.path)}
-            />
-          ))}
+          {inputs.length === 0 ? (
+            <p className="empty">No files changed in this pull request.</p>
+          ) : (
+            inputs.map((input) => (
+              <FileDiffPanel
+                key={input.path}
+                input={input}
+                blobUrl={blobUrl(pr.ref, pr.headSha, input.path)}
+                layout={layout}
+                viewed={viewed.has(input.path)}
+                expanded={expanded.has(input.path)}
+                onToggleViewed={() => toggle(input.path)}
+                onToggleExpanded={() => toggleExpanded(input.path)}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>

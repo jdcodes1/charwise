@@ -23,6 +23,11 @@ const pr: GhPr = {
 
 beforeEach(() => localStorage.clear());
 
+/** Panels start collapsed; open the one file this fixture has. */
+async function expandFirst() {
+  await userEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+}
+
 describe("Review", () => {
   it("shows the PR title and file", () => {
     render(<Review pr={pr} />);
@@ -30,8 +35,9 @@ describe("Review", () => {
     expect(screen.getAllByText("src/api/client.ts").length).toBeGreaterThan(0);
   });
 
-  it("renders character-level highlights", () => {
+  it("renders character-level highlights once a file is expanded", async () => {
     const { container } = render(<Review pr={pr} />);
+    await expandFirst();
     expect([...container.querySelectorAll(".chg")].map((n) => n.textContent)).toEqual(["3", "6"]);
   });
 
@@ -58,9 +64,51 @@ describe("Review", () => {
 
   it("starts in split layout and switches to unified", async () => {
     const { container } = render(<Review pr={pr} />);
+    await expandFirst();
     expect(container.querySelectorAll("tr.split")).toHaveLength(1);
     await userEvent.click(screen.getByRole("button", { name: /unified/i }));
     expect(container.querySelectorAll("tr.split")).toHaveLength(0);
     expect(container.querySelectorAll("table.diff tr")).toHaveLength(2);
+  });
+});
+
+describe("Review with many files", () => {
+  const many: GhPr = {
+    ...pr,
+    files: Array.from({ length: 12 }, (_, i) => ({
+      filename: `src/module${i}.ts`,
+      previousFilename: null,
+      status: "modified",
+      additions: 1,
+      deletions: 1,
+      patch: "@@ -1,1 +1,1 @@\n-  const a = 1;\n+  const a = 2;",
+    })),
+  };
+
+  // Building every file's rows during render blocked the main thread for
+  // seconds on a 300-file PR, with isPending already false so nothing on
+  // screen said anything was happening.
+  it("builds rows for no file until one is expanded", async () => {
+    const { container } = render(<Review pr={many} />);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(0);
+
+    await userEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(1);
+
+    await userEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(2);
+  });
+
+  it("lists every file in the tree without building any rows", () => {
+    const { container } = render(<Review pr={many} />);
+    expect(container.querySelectorAll(".file-tree li")).toHaveLength(12);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(0);
+  });
+});
+
+describe("Review with no files", () => {
+  it("says so instead of rendering a bare header", () => {
+    render(<Review pr={{ ...pr, files: [] }} />);
+    expect(screen.getByText(/no files changed/i)).toBeInTheDocument();
   });
 });

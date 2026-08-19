@@ -1,59 +1,86 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { buildFileDiff } from "../diff";
+import type { FileDiffInput } from "../diff";
 import FileDiffPanel from "./FileDiff";
 
-const file = buildFileDiff({
+const file: FileDiffInput = {
   path: "src/api/client.ts",
   oldPath: "src/api/client.ts",
   status: "modified",
   additions: 1,
   deletions: 1,
   patch: "@@ -41,1 +41,1 @@\n-    timeout: 30_000,\n+    timeout: 60_000,",
-});
+};
+
+function panel(props: Partial<Parameters<typeof FileDiffPanel>[0]> = {}) {
+  return render(
+    <FileDiffPanel
+      input={file}
+      layout="split"
+      viewed={false}
+      expanded
+      onToggleViewed={() => {}}
+      onToggleExpanded={() => {}}
+      {...props}
+    />,
+  );
+}
 
 describe("FileDiffPanel", () => {
   it("shows the path and the change counts", () => {
-    render(<FileDiffPanel file={file} layout="split" viewed={false} onToggleViewed={() => {}} />);
+    panel();
     expect(screen.getByText("src/api/client.ts")).toBeInTheDocument();
     expect(screen.getByText("+1")).toBeInTheDocument();
     expect(screen.getByText("−1")).toBeInTheDocument();
   });
 
-  it("renders the diff rows when not viewed", () => {
-    const { container } = render(<FileDiffPanel file={file} layout="split" viewed={false} onToggleViewed={() => {}} />);
+  it("renders the diff rows when expanded and not viewed", () => {
+    const { container } = panel();
     expect(container.querySelectorAll("table.diff tr")).toHaveLength(1);
   });
 
   it("collapses the rows when viewed", () => {
-    const { container } = render(<FileDiffPanel file={file} layout="split" viewed onToggleViewed={() => {}} />);
+    const { container } = panel({ viewed: true });
     expect(container.querySelector("table.diff")).toBeNull();
+  });
+
+  it("builds nothing while collapsed", () => {
+    const { container } = panel({ expanded: false });
+    expect(container.querySelector("table.diff")).toBeNull();
+    expect(screen.getByRole("button", { name: /src\/api\/client\.ts/ })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("calls onToggleExpanded when the disclosure is clicked", async () => {
+    const onToggleExpanded = vi.fn();
+    panel({ expanded: false, onToggleExpanded });
+    await userEvent.click(screen.getByRole("button", { name: /src\/api\/client\.ts/ }));
+    expect(onToggleExpanded).toHaveBeenCalledOnce();
   });
 
   it("calls onToggleViewed when the checkbox is clicked", async () => {
     const onToggleViewed = vi.fn();
-    render(<FileDiffPanel file={file} layout="split" viewed={false} onToggleViewed={onToggleViewed} />);
+    panel({ onToggleViewed });
     await userEvent.click(screen.getByRole("checkbox", { name: /viewed/i }));
     expect(onToggleViewed).toHaveBeenCalledOnce();
   });
 
   it("shows a rename as old → new", () => {
-    const renamed = buildFileDiff({
-      path: "src/new.ts",
-      oldPath: "src/old.ts",
-      status: "renamed",
-      additions: 0,
-      deletions: 0,
-      patch: "@@ -1,1 +1,1 @@\n-a\n+b",
+    panel({
+      input: {
+        path: "src/new.ts",
+        oldPath: "src/old.ts",
+        status: "renamed",
+        additions: 0,
+        deletions: 0,
+        patch: "@@ -1,1 +1,1 @@\n-a\n+b",
+      },
     });
-    render(<FileDiffPanel file={renamed} layout="split" viewed={false} onToggleViewed={() => {}} />);
     expect(screen.getByText("src/old.ts → src/new.ts")).toBeInTheDocument();
   });
 
   it("explains an oversized file instead of rendering an empty table", () => {
-    const big = buildFileDiff({ path: "big.json", oldPath: "big.json", status: "modified", additions: 9000, deletions: 9000 });
-    render(<FileDiffPanel file={big} layout="split" viewed={false} onToggleViewed={() => {}} />);
+    panel({ input: { path: "big.json", oldPath: "big.json", status: "modified", additions: 9000, deletions: 9000 } });
     expect(screen.getByText(/diff too large/i)).toBeInTheDocument();
   });
 });
@@ -64,49 +91,61 @@ describe("FileDiffPanel", () => {
 describe("FileDiffPanel without a patch", () => {
   const blobUrl = "https://github.com/o/r/blob/head1/docs/logo.png";
 
-  function renderNoPatch(input: Parameters<typeof buildFileDiff>[0]) {
-    return render(
-      <FileDiffPanel
-        file={buildFileDiff(input)}
-        blobUrl={blobUrl}
-        layout="split"
-        viewed={false}
-        onToggleViewed={() => {}}
-      />,
-    );
-  }
+  const renamed: FileDiffInput = {
+    path: "src/new.ts",
+    oldPath: "src/old.ts",
+    status: "renamed",
+    additions: 0,
+    deletions: 0,
+  };
+  const unchanged: FileDiffInput = {
+    path: "src/empty.ts",
+    oldPath: "src/empty.ts",
+    status: "modified",
+    additions: 0,
+    deletions: 0,
+  };
+  const binary: FileDiffInput = {
+    path: "docs/logo.png",
+    oldPath: "docs/logo.png",
+    status: "modified",
+    additions: 0,
+    deletions: 0,
+  };
+  const tooLarge: FileDiffInput = {
+    path: "big.json",
+    oldPath: "big.json",
+    status: "modified",
+    additions: 9000,
+    deletions: 9000,
+  };
 
   it("calls a pure rename a rename, not an oversized diff", () => {
-    renderNoPatch({ path: "src/new.ts", oldPath: "src/old.ts", status: "renamed", additions: 0, deletions: 0 });
+    panel({ input: renamed, blobUrl });
     expect(screen.getByText(/renamed, no content change/i)).toBeInTheDocument();
     expect(screen.queryByText(/too large/i)).toBeNull();
   });
 
   it("calls a mode-only or empty change no content change", () => {
-    renderNoPatch({ path: "src/empty.ts", oldPath: "src/empty.ts", status: "modified", additions: 0, deletions: 0 });
+    panel({ input: unchanged, blobUrl });
     expect(screen.getByText(/no content change/i)).toBeInTheDocument();
     expect(screen.queryByText(/too large/i)).toBeNull();
   });
 
   it("calls a binary blob a binary file", () => {
-    renderNoPatch({ path: "docs/logo.png", oldPath: "docs/logo.png", status: "modified", additions: 0, deletions: 0 });
+    panel({ input: binary, blobUrl });
     expect(screen.getByText(/binary file/i)).toBeInTheDocument();
     expect(screen.queryByText(/too large/i)).toBeNull();
   });
 
   it("still calls a genuinely oversized text diff too large", () => {
-    renderNoPatch({ path: "big.json", oldPath: "big.json", status: "modified", additions: 9000, deletions: 9000 });
+    panel({ input: tooLarge, blobUrl });
     expect(screen.getByText(/diff too large/i)).toBeInTheDocument();
   });
 
   it("links every patch-less file to the file on GitHub", () => {
-    for (const input of [
-      { path: "src/new.ts", oldPath: "src/old.ts", status: "renamed", additions: 0, deletions: 0 },
-      { path: "src/empty.ts", oldPath: "src/empty.ts", status: "modified", additions: 0, deletions: 0 },
-      { path: "docs/logo.png", oldPath: "docs/logo.png", status: "modified", additions: 0, deletions: 0 },
-      { path: "big.json", oldPath: "big.json", status: "modified", additions: 9000, deletions: 9000 },
-    ]) {
-      const { unmount } = renderNoPatch(input);
+    for (const input of [renamed, unchanged, binary, tooLarge]) {
+      const { unmount } = panel({ input, blobUrl });
       expect(screen.getByRole("link", { name: /view .*on github/i })).toHaveAttribute("href", blobUrl);
       unmount();
     }
