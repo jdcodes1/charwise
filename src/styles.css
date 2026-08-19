@@ -50,3 +50,34 @@ body {
 code, pre, table.diff, textarea, input[type="url"], input[type="password"] {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+table.diff {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre;
+}
+table.diff td { padding: 0; vertical-align: top; }
+td.gutter {
+  width: 1%;
+  padding: 0 10px 0 12px;
+  text-align: right;
+  color: var(--gut);
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid var(--line);
+}
+td.code { padding: 0 14px 0 10px; width: 50%; }
+tr.split td.code:first-of-type { border-right: 1px solid var(--line); }
+td.code.del { background: var(--del-bg); }
+td.code.add { background: var(--add-bg); }
+td.code.empty {
+  background: repeating-linear-gradient(135deg, transparent 0 6px, var(--surface-2) 6px 7px);
+}
+.chg { border-radius: 3px; padding: 1px 0; }
+.del .chg { background: var(--del-hi); color: var(--del-ink); box-shadow: 0 0 0 1px var(--del-hi); }
+.add .chg { background: var(--add-hi); color: var(--add-ink); box-shadow: 0 0 0 1px var(--add-hi); }
+.ws { color: var(--gut); }
+.del .chg .ws, .add .chg .ws { color: currentColor; opacity: 0.75; }
+.scroll { overflow-x: auto; }
