@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
+import { FILES_AUTO_EXPAND } from "../diff/constants";
 import type { GhPr } from "../github/types";
 import Review from "./Review";
 
@@ -22,11 +23,6 @@ const pr: GhPr = {
 
 beforeEach(() => localStorage.clear());
 
-/** Panels start collapsed; open the one file this fixture has. */
-async function expandFirst() {
-  await userEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
-}
-
 describe("Review", () => {
   it("shows the PR title and file", () => {
     render(<Review pr={pr} />);
@@ -34,9 +30,8 @@ describe("Review", () => {
     expect(screen.getAllByText("src/api/client.ts").length).toBeGreaterThan(0);
   });
 
-  it("renders character-level highlights once a file is expanded", async () => {
+  it("renders character-level highlights", () => {
     const { container } = render(<Review pr={pr} />);
-    await expandFirst();
     expect([...container.querySelectorAll(".chg")].map((n) => n.textContent)).toEqual(["3", "6"]);
   });
 
@@ -63,7 +58,6 @@ describe("Review", () => {
 
   it("starts in split layout and switches to unified", async () => {
     const { container } = render(<Review pr={pr} />);
-    await expandFirst();
     expect(container.querySelectorAll("tr.split")).toHaveLength(1);
     await userEvent.click(screen.getByRole("button", { name: /unified/i }));
     expect(container.querySelectorAll("tr.split")).toHaveLength(0);
@@ -71,10 +65,10 @@ describe("Review", () => {
   });
 });
 
-describe("Review with many files", () => {
-  const many: GhPr = {
+function prWith(fileCount: number): GhPr {
+  return {
     ...pr,
-    files: Array.from({ length: 12 }, (_, i) => ({
+    files: Array.from({ length: fileCount }, (_, i) => ({
       filename: `src/module${i}.ts`,
       previousFilename: null,
       status: "modified",
@@ -83,6 +77,10 @@ describe("Review with many files", () => {
       patch: "@@ -1,1 +1,1 @@\n-  const a = 1;\n+  const a = 2;",
     })),
   };
+}
+
+describe("Review above the auto-expand cap", () => {
+  const many = prWith(FILES_AUTO_EXPAND + 5);
 
   // Building every file's rows during render blocked the main thread for
   // seconds on a 300-file PR, with isPending already false so nothing on
@@ -100,8 +98,25 @@ describe("Review with many files", () => {
 
   it("lists every file in the tree without building any rows", () => {
     const { container } = render(<Review pr={many} />);
-    expect(container.querySelectorAll(".file-tree li")).toHaveLength(12);
+    expect(container.querySelectorAll(".file-tree li")).toHaveLength(FILES_AUTO_EXPAND + 5);
     expect(container.querySelectorAll("table.diff")).toHaveLength(0);
+  });
+});
+
+describe("Review at or below the auto-expand cap", () => {
+  // The common case. A PR this size costs a few hundred milliseconds to build
+  // in full, which is not worth a click per file to avoid.
+  it("builds every file's rows on mount", () => {
+    const { container } = render(<Review pr={prWith(FILES_AUTO_EXPAND)} />);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(FILES_AUTO_EXPAND);
+    expect(screen.queryAllByRole("button", { expanded: false })).toHaveLength(0);
+  });
+
+  it("still lets a file be collapsed by hand", async () => {
+    const { container } = render(<Review pr={prWith(3)} />);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(3);
+    await userEvent.click(screen.getAllByRole("button", { expanded: true })[0]);
+    expect(container.querySelectorAll("table.diff")).toHaveLength(2);
   });
 });
 

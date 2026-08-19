@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FileDiffInput, Layout } from "../diff";
+import { FILES_AUTO_EXPAND } from "../diff/constants";
 import type { GhPr } from "../github/types";
 import { blobUrl } from "../github/url";
 import { useKeyboardNav } from "../state/useKeyboardNav";
@@ -11,9 +12,6 @@ export default function Review({ pr }: { pr: GhPr }) {
   const [layout, setLayout] = useState<Layout>("split");
   const [filter, setFilter] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  // Panels start collapsed and nothing is parsed until one is opened. See the
-  // useMemo in FileDiffPanel.
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set<string>());
   const filterRef = useRef<HTMLInputElement>(null);
   const { viewed, toggle } = useViewedFiles(pr.headSha);
 
@@ -32,6 +30,18 @@ export default function Review({ pr }: { pr: GhPr }) {
       })),
     [pr.files],
   );
+
+  // Small PRs open read-to-read: building every file costs a few hundred
+  // milliseconds and a click-per-file tax is the wrong price for avoiding it.
+  // Past the cap the same work blocks the main thread for seconds with no
+  // spinner, so those PRs open collapsed and build one file at a time.
+  const autoExpanded = useMemo<ReadonlySet<string>>(
+    () => new Set(inputs.length <= FILES_AUTO_EXPAND ? inputs.map((file) => file.path) : []),
+    [inputs],
+  );
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(autoExpanded);
+  // Same object on mount, so React bails out; a new PR reseeds.
+  useEffect(() => setExpanded(autoExpanded), [autoExpanded]);
 
   const toggleExpanded = useCallback((path: string) => {
     setExpanded((current) => {

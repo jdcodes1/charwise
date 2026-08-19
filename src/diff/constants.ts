@@ -48,3 +48,11 @@ export const BINARY_EXTENSIONS = [
   "exe", "dll", "so", "dylib", "class", "wasm", "bin", "dat",
   "xlsx", "docx", "pptx", "sqlite", "db",
 ];
+
+/**
+ * A PR with at most this many files opens with every file expanded — the
+ * common case, where building all rows costs a few hundred milliseconds.
+ * Larger PRs open collapsed, because building every file up front blocks the
+ * main thread for seconds with no spinner.
+ */
+export const FILES_AUTO_EXPAND = 20;

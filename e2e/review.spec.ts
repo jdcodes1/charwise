@@ -26,8 +26,6 @@ test("loads a PR and highlights one character", async ({ page }) => {
   await page.getByRole("button", { name: "Open diff" }).click();
 
   await expect(page.getByText("Raise the timeout")).toBeVisible();
-  // Panels start collapsed so a 300-file PR does not freeze the tab.
-  await page.locator("button.disclosure").first().click();
   await expect(page.locator(".chg")).toHaveText(["3", "6"]);
 });
 
@@ -36,7 +34,6 @@ test("toggles to unified layout", async ({ page }) => {
   await page.evaluate(() => sessionStorage.setItem("charwise.token", "ghp_test"));
   await page.reload();
 
-  await page.locator("button.disclosure").first().click();
   await page.waitForSelector("table.diff");
   await expect(page.locator("tr.split")).toHaveCount(1);
   await page.getByRole("button", { name: "Unified" }).click();
@@ -54,7 +51,6 @@ test("contacts no host other than api.github.com", async ({ page }) => {
   await page.getByLabel("Pull request URL").fill("https://github.com/o/r/pull/5");
   await page.getByLabel("GitHub token").fill("ghp_test");
   await page.getByRole("button", { name: "Open diff" }).click();
-  await page.locator("button.disclosure").first().click();
   await page.waitForSelector("table.diff");
 
   expect(foreign).toEqual([]);
@@ -65,7 +61,7 @@ test("forgets the token when the tab closes unless remembered", async ({ page })
   await page.getByLabel("Pull request URL").fill("https://github.com/o/r/pull/5");
   await page.getByLabel("GitHub token").fill("ghp_test");
   await page.getByRole("button", { name: "Open diff" }).click();
-  await page.waitForSelector("button.disclosure");
+  await page.waitForSelector("table.diff");
 
   const stored = await page.evaluate(() => ({
     session: sessionStorage.getItem("charwise.token"),

@@ -85,14 +85,25 @@ changes the look of every diff — the tests in `src/diff/refine.test.ts` and
 
 ## Rendering cost
 
-`buildFileDiff` runs per file, not per PR. Panels start collapsed and each one
-parses its own patch inside its own `useMemo` only while it is open, so opening
-a PR costs nothing beyond the metadata. Building all 300 files at GitHub's cap
-during one render measured 3,504 ms of blocked main thread and 13,500 mounted
-rows, with `isPending` already false so nothing on screen said the tab was
-working; collapsed, the same PR renders in 246 ms with no rows, and expanding
-one file costs about 78 ms. The file tree, the filter, keyboard navigation and
-the viewed marks all run off metadata and force no build.
+`buildFileDiff` runs per file, not per PR. Each panel parses its own patch
+inside its own `useMemo`, and only while it is expanded.
+
+**`FILES_AUTO_EXPAND` = 20** (`src/diff/constants.ts`) is the line between the
+two behaviours. At or below it every file opens expanded — the common case,
+where building the whole PR costs a few hundred milliseconds (measured: a
+20-file PR mounts in 426 ms with all 900 rows). Above it the PR opens collapsed
+and each file is built when the reader opens it, because building all 300 files
+at GitHub's cap during one render measured 3,504 ms of blocked main thread and
+13,500 mounted rows, with `isPending` already false so nothing on screen said
+the tab was working. Collapsed, the same 300-file PR mounts in 117 ms with no
+rows built, and expanding one file costs about 78 ms.
+
+The cap exists because the cost is per-PR and the fix is not free either way: a
+click per file is the wrong price to pay on a 30-file PR that was never slow,
+and a frozen tab is the wrong price to pay on a 300-file one.
+
+The file tree, the filter, keyboard navigation and the viewed marks all run off
+metadata and force no build, so none of them expand anything.
 
 There is no virtualizer: a single very long file still mounts all its rows.
 
