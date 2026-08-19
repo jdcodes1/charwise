@@ -35,6 +35,27 @@ describe("Review", () => {
     expect([...container.querySelectorAll(".chg")].map((n) => n.textContent)).toEqual(["3", "6"]);
   });
 
+  it("skips files the filter has hidden when navigating", async () => {
+    const many: GhPr = {
+      ...pr,
+      files: ["src/alpha.ts", "src/beta.ts", "src/gamma.ts"].map((filename) => ({
+        filename,
+        previousFilename: null,
+        status: "modified",
+        additions: 1,
+        deletions: 1,
+        patch: "@@ -1,1 +1,1 @@\n-  const a = 1;\n+  const a = 2;",
+      })),
+    };
+    const { container } = render(<Review pr={many} />);
+    await userEvent.type(screen.getByLabelText(/filter files/i), "gamma");
+    // Focus must leave the filter or the shortcut is correctly suppressed.
+    await userEvent.click(container.querySelector(".files") as HTMLElement);
+    await userEvent.keyboard("j");
+    const active = container.querySelector("li.is-active .path");
+    expect(active?.textContent).toBe("src/gamma.ts");
+  });
+
   it("starts in split layout and switches to unified", async () => {
     const { container } = render(<Review pr={pr} />);
     expect(container.querySelectorAll("tr.split")).toHaveLength(1);

@@ -10,9 +10,16 @@ import Review from "./ui/Review";
  * The hash carries `owner/repo#number` and nothing else — no token, no diff
  * content, so browser history holds only the PR's identity.
  */
-function refFromHash(): PrRef | null {
+export function refFromHash(): PrRef | null {
   const hash = window.location.hash.replace(/^#/, "");
-  return hash ? parsePrUrl(decodeURIComponent(hash)) : null;
+  if (!hash) return null;
+  try {
+    return parsePrUrl(decodeURIComponent(hash));
+  } catch {
+    // decodeURIComponent throws URIError on a malformed escape such as "#%zz".
+    // A hand-edited address bar must not blank the page.
+    return null;
+  }
 }
 
 export default function App() {

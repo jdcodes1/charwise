@@ -37,16 +37,45 @@ export default function Review({ pr }: { pr: GhPr }) {
     [diffs],
   );
 
-  useKeyboardNav({
-    onNextFile: useCallback(() => select(Math.min(activeIndex + 1, diffs.length - 1)), [activeIndex, diffs.length, select]),
-    onPrevFile: useCallback(() => select(Math.max(activeIndex - 1, 0)), [activeIndex, select]),
-    onToggleLayout: useCallback(() => setLayout((l) => (l === "split" ? "unified" : "split")), []),
-    onToggleViewed: useCallback(() => {
-      const path = diffs[activeIndex]?.path;
-      if (path) toggle(path);
-    }, [activeIndex, diffs, toggle]),
-    onFocusFilter: useCallback(() => filterRef.current?.focus(), []),
-  });
+  // Indexes of the files the filter currently leaves on screen. Navigation
+  // walks this list, not the full one — stepping onto a hidden file looks to
+  // the reader like the keypress did nothing.
+  const visible = useMemo(() => {
+    const needle = filter.toLowerCase();
+    return diffs
+      .map((_, index) => index)
+      .filter((index) => needle === "" || diffs[index].path.toLowerCase().includes(needle));
+  }, [diffs, filter]);
+
+  const step = useCallback(
+    (delta: number) => {
+      if (visible.length === 0) return;
+      const at = visible.indexOf(activeIndex);
+      // If the active file has been filtered away, land on the first visible one.
+      const next = at === -1 ? 0 : Math.min(Math.max(at + delta, 0), visible.length - 1);
+      select(visible[next]);
+    },
+    [activeIndex, select, visible],
+  );
+
+  // Memoized: useKeyboardNav lists this object in its effect deps, so a fresh
+  // literal each render would detach and reattach the document listener on
+  // every keystroke.
+  const handlers = useMemo(
+    () => ({
+      onNextFile: () => step(1),
+      onPrevFile: () => step(-1),
+      onToggleLayout: () => setLayout((l) => (l === "split" ? "unified" : "split")),
+      onToggleViewed: () => {
+        const path = diffs[activeIndex]?.path;
+        if (path) toggle(path);
+      },
+      onFocusFilter: () => filterRef.current?.focus(),
+    }),
+    [activeIndex, diffs, step, toggle],
+  );
+
+  useKeyboardNav(handlers);
 
   return (
     <div className="review">
