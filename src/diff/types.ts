@@ -39,6 +39,13 @@ export interface Row {
   whitespaceOnly: boolean;
 }
 
+/**
+ * Why a file has no rendered rows. GitHub omits `patch` for binary blobs, pure
+ * renames, mode-only changes and empty files as well as for oversized ones, so
+ * a single `tooLarge` flag told the reader something false about most of them.
+ */
+export type NoPatchReason = "renamed" | "unchanged" | "binary" | "too-large";
+
 export interface FileDiff {
   path: string;
   /** Differs from `path` only for renames. */
@@ -47,8 +54,8 @@ export interface FileDiff {
   additions: number;
   deletions: number;
   rows: Row[];
-  /** True when GitHub omitted the patch and no fallback content was available. */
-  tooLarge: boolean;
+  /** Null when the patch was present and rows were built. */
+  noPatch: NoPatchReason | null;
 }
 
 export type Layout = "split" | "unified";

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { buildFileDiff } from "../diff";
 import type { Layout } from "../diff";
 import type { GhPr } from "../github/types";
+import { blobUrl } from "../github/url";
 import { useKeyboardNav } from "../state/useKeyboardNav";
 import { useViewedFiles } from "../state/useViewedFiles";
 import FileDiffPanel from "./FileDiff";
@@ -107,6 +108,7 @@ export default function Review({ pr }: { pr: GhPr }) {
             <FileDiffPanel
               key={file.path}
               file={file}
+              blobUrl={blobUrl(pr.ref, pr.headSha, file.path)}
               layout={layout}
               viewed={viewed.has(file.path)}
               onToggleViewed={() => toggle(file.path)}

@@ -33,3 +33,18 @@ export const PAIR_WINDOW = 25;
  * highlighting, which is what GitHub shows anyway.
  */
 export const REFINE_MAX_LINE = 2000;
+
+/**
+ * Extensions GitHub sends no patch for because the blob is not text. GitHub's
+ * files API carries no binary flag, so the path is the only signal available
+ * without fetching the blob — and the fallback message has to be honest about
+ * why a file has no diff rather than blaming its size.
+ */
+export const BINARY_EXTENSIONS = [
+  "png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "ico", "tif", "tiff", "psd",
+  "pdf", "zip", "gz", "tgz", "bz2", "xz", "7z", "rar", "jar", "war",
+  "woff", "woff2", "ttf", "otf", "eot",
+  "mp3", "wav", "flac", "ogg", "mp4", "mov", "avi", "webm", "mkv",
+  "exe", "dll", "so", "dylib", "class", "wasm", "bin", "dat",
+  "xlsx", "docx", "pptx", "sqlite", "db",
+];

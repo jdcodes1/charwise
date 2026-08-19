@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePrUrl } from "./url";
+import { blobUrl, parsePrUrl } from "./url";
 
 describe("parsePrUrl", () => {
   it("parses a canonical PR url", () => {
@@ -32,5 +32,17 @@ describe("parsePrUrl", () => {
 
   it("returns null for junk", () => {
     expect(parsePrUrl("not a url")).toBeNull();
+  });
+});
+
+describe("blobUrl", () => {
+  const ref = { owner: "o", repo: "r", number: 5 };
+
+  it("points at the file on the PR's head commit", () => {
+    expect(blobUrl(ref, "head1", "src/api/client.ts")).toBe("https://github.com/o/r/blob/head1/src/api/client.ts");
+  });
+
+  it("encodes each path segment but keeps the separators", () => {
+    expect(blobUrl(ref, "head1", "docs/a b/c#d.png")).toBe("https://github.com/o/r/blob/head1/docs/a%20b/c%23d.png");
   });
 });

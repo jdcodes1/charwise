@@ -104,7 +104,8 @@ td.code.empty {
 .add-count { color: var(--add-ink); }
 .del-count { color: var(--del-ink); }
 .viewed { margin-left: auto; display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.too-large { margin: 0; padding: 14px; color: var(--muted); }
+.no-patch { margin: 0; padding: 14px; color: var(--muted); }
+.blob-link { color: var(--accent); }
 .loader { max-width: 560px; margin: 0 auto; padding: 64px 24px; display: flex; flex-direction: column; gap: 24px; }
 .loader h1 { margin: 0; font-size: 32px; letter-spacing: -0.02em; }
 .loader-form { display: flex; flex-direction: column; gap: 14px; }
