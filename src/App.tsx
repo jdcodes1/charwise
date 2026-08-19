@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { addRecentPr, getToken } from "./github/token";
+import { GitHubError } from "./github/types";
 import type { PrRef } from "./github/types";
 import { parsePrUrl } from "./github/url";
 import { usePrQuery } from "./state/usePrQuery";
@@ -25,7 +26,14 @@ export function refFromHash(): PrRef | null {
 export default function App() {
   const [ref, setRef] = useState<PrRef | null>(refFromHash);
   const [token, setToken] = useState(() => getToken() ?? "");
-  const query = usePrQuery(ref, token);
+  // Every submission is a new attempt, so a retry after an error is a new query
+  // rather than a cache hit on the rejection. See usePrQuery.
+  const [attempt, setAttempt] = useState(0);
+  // Held here because an error unmounts Review and mounts a *fresh* PrLoader:
+  // without this the URL field comes back blank and the next click reports
+  // "That is not a pull request URL" about a URL the user did type.
+  const [urlText, setUrlText] = useState("");
+  const query = usePrQuery(ref, token, attempt);
 
   useEffect(() => {
     const onHashChange = () => setRef(refFromHash());
@@ -37,14 +45,24 @@ export default function App() {
     if (query.data && ref) addRecentPr(ref, query.data.title);
   }, [query.data, ref]);
 
-  function open(next: PrRef, nextToken: string) {
+  function open(next: PrRef, nextToken: string, nextUrlText: string) {
     setToken(nextToken);
     setRef(next);
+    setUrlText(nextUrlText);
+    setAttempt((n) => n + 1);
     window.location.hash = encodeURIComponent(`${next.owner}/${next.repo}#${next.number}`);
   }
 
-  if (!ref) return <PrLoader onOpen={open} />;
+  // Mirrors usePrQuery's `enabled`. A disabled react-query v5 query still
+  // reports isPending, so checking isPending first left a deep link with no
+  // token stuck on "Loading diff…" with no inputs on screen and nothing
+  // fetching — which is every bookmarked PR, since the token is sessionStorage
+  // by design.
+  if (!ref || !token) return <PrLoader onOpen={open} initialUrl={urlText} />;
   if (query.isPending) return <main className="status">Loading diff…</main>;
-  if (query.error) return <PrLoader onOpen={open} error={query.error.message} />;
+  if (query.error) {
+    const rejectedToken = query.error instanceof GitHubError && query.error.code === "auth";
+    return <PrLoader onOpen={open} error={query.error.message} initialUrl={urlText} focusToken={rejectedToken} />;
+  }
   return <Review pr={query.data} />;
 }

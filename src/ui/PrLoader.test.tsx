@@ -16,7 +16,11 @@ describe("PrLoader", () => {
     await userEvent.type(screen.getByLabelText(/pull request url/i), "https://github.com/o/r/pull/12");
     await userEvent.type(screen.getByLabelText(/token/i), "ghp_x");
     await userEvent.click(screen.getByRole("button", { name: /open/i }));
-    expect(onOpen).toHaveBeenCalledWith({ owner: "o", repo: "r", number: 12 }, "ghp_x");
+    expect(onOpen).toHaveBeenCalledWith(
+      { owner: "o", repo: "r", number: 12 },
+      "ghp_x",
+      "https://github.com/o/r/pull/12",
+    );
   });
 
   it("stores the token in sessionStorage by default", async () => {
@@ -100,6 +104,6 @@ describe("PrLoader", () => {
     setToken("ghp_stored", false);
     render(<PrLoader onOpen={onOpen} />);
     await userEvent.click(screen.getByRole("button", { name: /o\/r#9 Fix it/ }));
-    expect(onOpen).toHaveBeenCalledWith({ owner: "o", repo: "r", number: 9 }, "ghp_stored");
+    expect(onOpen).toHaveBeenCalledWith({ owner: "o", repo: "r", number: 9 }, "ghp_stored", "o/r#9");
   });
 });

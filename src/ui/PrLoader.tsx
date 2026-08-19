@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { clearAllLocalData, getRecentPrs, getToken, isTokenRemembered, setToken } from "../github/token";
 import type { PrRef } from "../github/types";
 import { parsePrUrl } from "../github/url";
@@ -6,21 +6,34 @@ import { parsePrUrl } from "../github/url";
 export default function PrLoader({
   onOpen,
   error,
+  initialUrl = "",
+  focusToken = false,
 }: {
-  onOpen: (ref: PrRef, token: string) => void;
+  /** The third argument is the text the user submitted, so a caller that
+      re-mounts this component after an error can put it back. */
+  onOpen: (ref: PrRef, token: string, urlText: string) => void;
   error?: string;
+  initialUrl?: string;
+  /** Set when the token was the thing GitHub rejected, so the cursor lands on
+      the field the error message tells the user to correct. */
+  focusToken?: boolean;
 }) {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(initialUrl);
   const [token, setTokenValue] = useState(() => getToken() ?? "");
   const [remember, setRemember] = useState(() => isTokenRemembered());
   const [localError, setLocalError] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
   const [recent, setRecent] = useState(() => getRecentPrs());
+  const tokenRef = useRef<HTMLInputElement>(null);
 
-  function open(ref: PrRef) {
+  useEffect(() => {
+    if (focusToken) tokenRef.current?.focus();
+  }, [focusToken]);
+
+  function open(ref: PrRef, urlText: string) {
     setLocalError(null);
     setToken(token, remember);
-    onOpen(ref, token);
+    onOpen(ref, token, urlText);
   }
 
   function submit() {
@@ -29,7 +42,7 @@ export default function PrLoader({
       setLocalError("That is not a pull request URL. Try github.com/owner/repo/pull/123");
       return;
     }
-    open(ref);
+    open(ref, url);
   }
 
   function clearEverything() {
@@ -69,7 +82,13 @@ export default function PrLoader({
         </label>
         <label>
           GitHub token
-          <input type="password" value={token} onChange={(e) => setTokenValue(e.target.value)} placeholder="ghp_…" />
+          <input
+            ref={tokenRef}
+            type="password"
+            value={token}
+            onChange={(e) => setTokenValue(e.target.value)}
+            placeholder="ghp_…"
+          />
         </label>
         <label className="checkbox">
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
@@ -106,7 +125,10 @@ export default function PrLoader({
           <ul>
             {recent.map((entry) => (
               <li key={entry.label}>
-                <button type="button" onClick={() => open(entry.ref)}>
+                <button
+                  type="button"
+                  onClick={() => open(entry.ref, `${entry.ref.owner}/${entry.ref.repo}#${entry.ref.number}`)}
+                >
                   {entry.label}
                 </button>
               </li>
