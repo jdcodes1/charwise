@@ -1,4 +1,4 @@
-import { PAIR_THRESHOLD } from "./constants";
+import { PAIR_MAX_COMPARISONS, PAIR_THRESHOLD, PAIR_WINDOW } from "./constants";
 import { similarity } from "./lcs";
 import { refinePair } from "./refine";
 import type { DiffLine, Hunk, Row } from "./types";
@@ -19,24 +19,39 @@ export function pairBlock(dels: DiffLine[], adds: DiffLine[]): Pairing[] {
   const unpairedDels: DiffLine[] = [];
   const claimed = new Set<number>();
 
-  for (const d of dels) {
+  // Every comparison is an O(n*m) DP, so a big changed block is a second of
+  // synchronous work. Past the cap, a deletion only looks near its own index —
+  // reordering within a window still pairs, distant moves degrade to unpaired.
+  const windowed = dels.length * adds.length > PAIR_MAX_COMPARISONS;
+
+  dels.forEach((d, dIndex) => {
     let bestIndex = -1;
     let bestScore = PAIR_THRESHOLD;
-    adds.forEach((a, index) => {
-      if (claimed.has(index)) return;
+    const from = windowed ? Math.max(0, dIndex - PAIR_WINDOW) : 0;
+    const to = windowed ? Math.min(adds.length, dIndex + PAIR_WINDOW + 1) : adds.length;
+
+    for (let index = from; index < to; index++) {
+      if (claimed.has(index)) continue;
+      const a = adds[index];
+      // Similarity is bounded by the length ratio, so a pair that cannot reach
+      // the threshold is skipped before paying for the DP. Exact, not a
+      // heuristic: it only skips pairs the DP would have rejected anyway.
+      const shorter = Math.min(d.text.length, a.text.length);
+      const total = d.text.length + a.text.length;
+      if (total > 0 && (2 * shorter) / total <= PAIR_THRESHOLD) continue;
       const score = similarity(d.text, a.text);
       if (score > bestScore) {
         bestScore = score;
         bestIndex = index;
       }
-    });
+    }
     if (bestIndex >= 0) {
       claimed.add(bestIndex);
       paired.push({ del: d, add: adds[bestIndex] });
     } else {
       unpairedDels.push(d);
     }
-  }
+  });
 
   const rows: Pairing[] = [...paired];
   for (const d of unpairedDels) rows.push({ del: d, add: null });

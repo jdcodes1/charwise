@@ -46,6 +46,21 @@ describe("pairBlock", () => {
     expect(rows[1].add?.text).toBe("// added");
   });
 
+  it("stays responsive on a large changed block", () => {
+    const dels = Array.from({ length: 200 }, (_, i) => del(`  const value${i} = compute(${i}, options);`, i + 1));
+    const adds = Array.from({ length: 200 }, (_, i) => add(`  const value${i} = compute(${i}, settings);`, i + 1));
+    const started = performance.now();
+    const rows = pairBlock(dels, adds);
+    expect(performance.now() - started).toBeLessThan(400);
+    expect(rows).toHaveLength(200);
+    expect(rows.every((r) => r.del !== null && r.add !== null)).toBe(true);
+  });
+
+  it("skips pairs whose lengths make the threshold unreachable", () => {
+    const rows = pairBlock([del("x = 1;", 1)], [add(`x = 1; // ${"y".repeat(200)}`, 1)]);
+    expect(rows).toHaveLength(2);
+  });
+
   it("handles a block with no insertions", () => {
     const rows = pairBlock([del("gone;", 1)], []);
     expect(rows).toEqual([{ del: rows[0].del, add: null }]);

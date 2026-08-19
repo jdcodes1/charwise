@@ -16,6 +16,17 @@ export const ISLAND_MAX = 3;
 export const SIMILARITY_MAX_LEN = 1000;
 
 /**
+ * Above this many deletion x insertion comparisons, `pairBlock` stops
+ * considering every insertion for every deletion and looks only within
+ * PAIR_WINDOW of the deletion's own index. A 200x200 changed block is 40,000
+ * similarity DPs — around a second of synchronous work before the UI paints.
+ */
+export const PAIR_MAX_COMPARISONS = 10_000;
+
+/** How far from its own index a deletion looks for a partner, once capped. */
+export const PAIR_WINDOW = 25;
+
+/**
  * Longest line `refinePair` will diff. Both the token DP and the character DP
  * are O(n*m) in time and memory, so a minified or generated line would allocate
  * gigabytes and hang the tab. Past this length the pair degrades to whole-line
