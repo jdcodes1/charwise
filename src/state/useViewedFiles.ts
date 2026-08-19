@@ -1,29 +1,62 @@
 import { useCallback, useEffect, useState } from "react";
 
-function read(key: string): Set<string> {
-  const raw = localStorage.getItem(key);
-  if (!raw) return new Set();
+const KEY = "charwise.viewed";
+
+/**
+ * How many head SHAs keep their marks. One key per SHA would grow without
+ * bound — a daily reviewer would leave thousands of dead entries behind and
+ * eventually hit the origin's storage quota. Entries are held most-recent
+ * first and the tail is dropped.
+ */
+const MAX_SHAS = 20;
+
+interface Entry {
+  sha: string;
+  paths: string[];
+}
+
+function readAll(): Entry[] {
+  const raw = localStorage.getItem(KEY);
+  if (!raw) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? new Set(parsed as string[]) : new Set();
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (e): e is Entry =>
+        typeof e === "object" &&
+        e !== null &&
+        typeof (e as Entry).sha === "string" &&
+        Array.isArray((e as Entry).paths) &&
+        (e as Entry).paths.every((p) => typeof p === "string"),
+    );
   } catch {
-    return new Set();
+    return [];
   }
 }
 
+function readOne(sha: string): Set<string> {
+  return new Set(readAll().find((e) => e.sha === sha)?.paths ?? []);
+}
+
+function writeOne(sha: string, paths: Set<string>): void {
+  const rest = readAll().filter((e) => e.sha !== sha);
+  const next: Entry[] = [{ sha, paths: [...paths] }, ...rest].slice(0, MAX_SHAS);
+  localStorage.setItem(KEY, JSON.stringify(next));
+}
+
 /**
- * Per-file viewed marks, keyed by head SHA so a new push clears them.
+ * Per-file viewed marks, kept per head SHA so a new push to the branch clears
+ * them — the same behaviour GitHub has.
  */
 export function useViewedFiles(headSha: string): {
   viewed: ReadonlySet<string>;
   toggle: (path: string) => void;
 } {
-  const key = `charwise.viewed.${headSha}`;
-  const [viewed, setViewed] = useState<Set<string>>(() => read(key));
+  const [viewed, setViewed] = useState<Set<string>>(() => readOne(headSha));
 
   useEffect(() => {
-    setViewed(read(key));
-  }, [key]);
+    setViewed(readOne(headSha));
+  }, [headSha]);
 
   const toggle = useCallback(
     (path: string) => {
@@ -31,11 +64,11 @@ export function useViewedFiles(headSha: string): {
         const next = new Set(current);
         if (next.has(path)) next.delete(path);
         else next.add(path);
-        localStorage.setItem(key, JSON.stringify([...next]));
+        writeOne(headSha, next);
         return next;
       });
     },
-    [key],
+    [headSha],
   );
 
   return { viewed, toggle };
