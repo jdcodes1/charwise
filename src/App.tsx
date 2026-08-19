@@ -4,7 +4,7 @@ import { GitHubError, describeGitHubError } from "./github/types";
 import type { PrRef } from "./github/types";
 import { parsePrUrl } from "./github/url";
 import { usePrQuery } from "./state/usePrQuery";
-import PrLoader from "./ui/PrLoader";
+import Landing from "./ui/Landing";
 import Review from "./ui/Review";
 
 /**
@@ -65,11 +65,18 @@ export default function App() {
   // token stuck on "Loading diff…" with no inputs on screen and nothing
   // fetching — which is every bookmarked PR, since the token is sessionStorage
   // by design.
-  if (!ref || !token) return <PrLoader onOpen={open} initialUrl={urlText} />;
+  if (!ref || !token) return <Landing onOpen={open} initialUrl={urlText} />;
   if (query.isPending) return <main className="status">Loading diff…</main>;
   if (query.error) {
     const rejectedToken = query.error instanceof GitHubError && query.error.code === "auth";
-    return <PrLoader onOpen={open} error={describeGitHubError(query.error)} initialUrl={urlText} focusToken={rejectedToken} />;
+    return (
+      <Landing
+        onOpen={open}
+        error={describeGitHubError(query.error)}
+        initialUrl={urlText}
+        focusToken={rejectedToken}
+      />
+    );
   }
   return <Review pr={query.data} />;
 }
