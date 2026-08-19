@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PAIR_THRESHOLD } from "./constants";
 import { lcsDiff, similarity } from "./lcs";
 
 describe("lcsDiff", () => {
@@ -61,9 +62,11 @@ describe("similarity", () => {
   });
 
   it("is below the pair threshold for unrelated statements", () => {
-    expect(
-      similarity("  await legacyQueue.publish(event);", "  await bus.emit(event.type, event.payload);"),
-    ).toBeLessThan(0.5);
+    // Shared indentation, `await`, `event`, and `);` inflate this to ~0.51 —
+    // the reason PAIR_THRESHOLD sits at 0.6 rather than 0.5.
+    const score = similarity("  await legacyQueue.publish(event);", "  await bus.emit(event.type, event.payload);");
+    expect(score).toBeLessThan(PAIR_THRESHOLD);
+    expect(score).toBeGreaterThan(0.45);
   });
 
   it("does not blow up on very long lines", () => {
