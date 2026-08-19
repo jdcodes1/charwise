@@ -72,6 +72,7 @@ function toRow(pairing: Pairing): Row {
       leftSegments: left,
       rightSegments: right,
       whitespaceOnly: del.text !== add.text && del.text.trim() === add.text.trim(),
+      header: null,
     };
   }
   return {
@@ -81,13 +82,27 @@ function toRow(pairing: Pairing): Row {
     leftSegments: null,
     rightSegments: null,
     whitespaceOnly: false,
+    header: null,
   };
 }
 
 /** Flatten hunks into rendered rows, pairing each contiguous changed block. */
 export function buildRows(hunks: Hunk[]): Row[] {
   const rows: Row[] = [];
-  for (const hunk of hunks) {
+  for (let h = 0; h < hunks.length; h++) {
+    const hunk = hunks[h];
+    // Between hunks only: a divider above the first line would be noise.
+    if (h > 0) {
+      rows.push({
+        kind: "gap",
+        del: null,
+        add: null,
+        leftSegments: null,
+        rightSegments: null,
+        whitespaceOnly: false,
+        header: hunk.header,
+      });
+    }
     let i = 0;
     while (i < hunk.lines.length) {
       const line = hunk.lines[i];
@@ -99,6 +114,7 @@ export function buildRows(hunks: Hunk[]): Row[] {
           leftSegments: null,
           rightSegments: null,
           whitespaceOnly: false,
+          header: null,
         });
         i++;
         continue;

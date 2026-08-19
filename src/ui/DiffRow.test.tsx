@@ -74,3 +74,21 @@ describe("DiffRow", () => {
     expect([...container.querySelectorAll("td.gutter")].map((n) => n.textContent)).toEqual(["41", "41"]);
   });
 });
+
+describe("DiffRow gaps", () => {
+  const TWO_HUNKS = "@@ -1,1 +1,1 @@\n-a = 1;\n+a = 2;\n@@ -500,1 +500,1 @@ function far()\n-y = 1;\n+y = 2;";
+
+  it("draws the @@ header as a full-width divider in split layout", () => {
+    const gap = rowsFor(TWO_HUNKS).find((r) => r.kind === "gap");
+    const { container } = table(<DiffRow row={gap!} layout="split" />);
+    const cell = container.querySelector("td.gap");
+    expect(cell?.textContent).toBe("@@ -500,1 +500,1 @@ function far()");
+    expect(cell?.getAttribute("colspan")).toBe("4");
+  });
+
+  it("spans both columns of the unified layout", () => {
+    const gap = rowsFor(TWO_HUNKS).find((r) => r.kind === "gap");
+    const { container } = table(<DiffRow row={gap!} layout="unified" />);
+    expect(container.querySelector("td.gap")?.getAttribute("colspan")).toBe("2");
+  });
+});

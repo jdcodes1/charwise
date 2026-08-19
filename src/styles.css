@@ -82,6 +82,17 @@ td.code.empty {
 .ws { border-radius: 2px; }
 .del .chg .ws { background: color-mix(in srgb, var(--del-ink) 28%, transparent); }
 .add .chg .ws { background: color-mix(in srgb, var(--add-ink) 28%, transparent); }
+td.gap {
+  padding: 2px 12px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  color: var(--gut);
+  user-select: none;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .scroll { overflow-x: auto; }
 
 .panel {

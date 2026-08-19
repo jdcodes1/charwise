@@ -96,14 +96,39 @@ describe("buildRows", () => {
     expect(rows[0].whitespaceOnly).toBe(false);
   });
 
-  it("concatenates rows across multiple hunks", () => {
+  it("joins rows across multiple hunks, divided by a gap", () => {
     // Realistic lines, not single characters: `a` and `b` score 0 similarity and
     // correctly refuse to pair, which would make this assert row count rather
     // than concatenation.
     const rows = buildRows(
       parsePatch("@@ -1,1 +1,1 @@\n-  const a = 1;\n+  const a = 2;\n@@ -9,1 +9,1 @@\n-  const c = 3;\n+  const c = 4;"),
     );
-    expect(rows).toHaveLength(2);
-    expect(rows.map((r) => r.kind)).toEqual(["pair", "pair"]);
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => r.kind)).toEqual(["pair", "gap", "pair"]);
+  });
+});
+
+describe("buildRows hunk gaps", () => {
+  const TWO_HUNKS = [
+    "@@ -1,2 +1,2 @@",
+    " const a = 1;",
+    "-const b = 2;",
+    "+const b = 3;",
+    "@@ -500,1 +500,1 @@ function far()",
+    "-const y = 1;",
+    "+const y = 2;",
+  ].join("\n");
+
+  it("emits a gap row between hunks so line 2 does not read as line 500", () => {
+    const rows = buildRows(parsePatch(TWO_HUNKS));
+    const gapIndexes = rows.map((r, i) => (r.kind === "gap" ? i : -1)).filter((i) => i >= 0);
+    expect(gapIndexes).toHaveLength(1);
+    expect(gapIndexes[0]).toBeGreaterThan(0);
+    expect(rows[gapIndexes[0]].header).toBe("@@ -500,1 +500,1 @@ function far()");
+  });
+
+  it("emits no gap before the first hunk", () => {
+    const rows = buildRows(parsePatch("@@ -1,1 +1,1 @@\n-a\n+b"));
+    expect(rows.some((r) => r.kind === "gap")).toBe(false);
   });
 });

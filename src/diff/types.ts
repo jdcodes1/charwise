@@ -26,9 +26,13 @@ export interface Hunk {
   lines: DiffLine[];
 }
 
-export type RowKind = "context" | "pair" | "delete" | "insert";
+export type RowKind = "context" | "pair" | "delete" | "insert" | "gap";
 
-/** One rendered row: a context line, a matched pair, or an unmatched line. */
+/**
+ * One rendered row: a context line, a matched pair, an unmatched line, or the
+ * gap between two hunks. Without the gap, the last line of one hunk sits
+ * directly above the first line of the next and reads as contiguous code.
+ */
 export interface Row {
   kind: RowKind;
   del: DiffLine | null;
@@ -37,6 +41,8 @@ export interface Row {
   rightSegments: Segment[] | null;
   /** True when the two paired lines are identical after trimming. */
   whitespaceOnly: boolean;
+  /** The raw @@ header of the hunk that follows. Set on "gap" rows only. */
+  header: string | null;
 }
 
 /**

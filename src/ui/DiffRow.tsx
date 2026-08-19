@@ -35,6 +35,17 @@ function Cell({
 export default function DiffRow({ row, layout }: { row: Row; layout: Layout }) {
   const ws = row.whitespaceOnly;
 
+  // Split renders gutter+code twice, unified once.
+  if (row.kind === "gap") {
+    return (
+      <tr className="gap">
+        <td className="gap" colSpan={layout === "unified" ? 2 : 4}>
+          {row.header}
+        </td>
+      </tr>
+    );
+  }
+
   if (row.kind === "context") {
     const line = row.del;
     if (layout === "unified") {
