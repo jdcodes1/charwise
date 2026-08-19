@@ -36,3 +36,16 @@ export class GitHubError extends Error {
     this.resetAt = resetAt;
   }
 }
+
+/**
+ * The message to show the user. `resetAt` was parsed and stored but never
+ * read, so "Rate limit reached" told the reader to wait without saying until
+ * when. Formatted as a local time, because a UTC timestamp is not something
+ * anyone can act on without arithmetic.
+ */
+export function describeGitHubError(error: Error): string {
+  if (error instanceof GitHubError && error.code === "ratelimit" && error.resetAt) {
+    return `${error.message} — resets at ${error.resetAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+  }
+  return error.message;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { addRecentPr, getToken } from "./github/token";
-import { GitHubError } from "./github/types";
+import { GitHubError, describeGitHubError } from "./github/types";
 import type { PrRef } from "./github/types";
 import { parsePrUrl } from "./github/url";
 import { usePrQuery } from "./state/usePrQuery";
@@ -62,7 +62,7 @@ export default function App() {
   if (query.isPending) return <main className="status">Loading diff…</main>;
   if (query.error) {
     const rejectedToken = query.error instanceof GitHubError && query.error.code === "auth";
-    return <PrLoader onOpen={open} error={query.error.message} initialUrl={urlText} focusToken={rejectedToken} />;
+    return <PrLoader onOpen={open} error={describeGitHubError(query.error)} initialUrl={urlText} focusToken={rejectedToken} />;
   }
   return <Review pr={query.data} />;
 }

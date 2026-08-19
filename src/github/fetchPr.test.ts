@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fetchPr } from "./fetchPr";
-import { GitHubError } from "./types";
+import { GitHubError, describeGitHubError } from "./types";
 
 const REF = { owner: "o", repo: "r", number: 5 };
 
@@ -90,6 +90,34 @@ describe("fetchPr", () => {
     expect(error).toBeInstanceOf(GitHubError);
     expect((error as GitHubError).code).toBe("ratelimit");
     expect((error as GitHubError).resetAt?.toISOString()).toBe("2026-08-18T12:00:00.000Z");
+  });
+
+  it("puts the reset time in the message the user is shown", async () => {
+    const resetAt = new Date(Date.UTC(2026, 7, 18, 12, 0, 0));
+    const fetchImpl = vi.fn(async () =>
+      json({ message: "rate limited" }, {
+        status: 403,
+        headers: {
+          "x-ratelimit-remaining": "0",
+          "x-ratelimit-reset": String(Math.floor(resetAt.getTime() / 1000)),
+        },
+      }),
+    ) as unknown as typeof fetch;
+
+    const error = (await fetchPr(REF, "tok", fetchImpl).catch((e: unknown) => e)) as GitHubError;
+    // Local time, because "resets at 12:00 UTC" is not something the reader
+    // can act on without doing arithmetic.
+    const local = resetAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    expect(describeGitHubError(error)).toBe(`Rate limit reached — resets at ${local}`);
+  });
+
+  it("leaves a rate-limit message alone when GitHub sent no reset header", async () => {
+    const fetchImpl = vi.fn(async () =>
+      json({ message: "rate limited" }, { status: 403, headers: { "x-ratelimit-remaining": "0" } }),
+    ) as unknown as typeof fetch;
+
+    const error = (await fetchPr(REF, "tok", fetchImpl).catch((e: unknown) => e)) as GitHubError;
+    expect(describeGitHubError(error)).toBe("Rate limit reached");
   });
 
   it("stops instead of looping forever when every page is full", async () => {
