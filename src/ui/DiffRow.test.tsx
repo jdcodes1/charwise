@@ -41,6 +41,15 @@ describe("DiffRow", () => {
     expect(container.querySelectorAll(".ws").length).toBeGreaterThan(0);
   });
 
+  it("keeps the real characters when marking whitespace", () => {
+    const [row] = rowsFor("@@ -1,1 +1,1 @@\n-\tif (x) return;\n+    if (x) return;");
+    const { container } = table(<DiffRow row={row} layout="split" />);
+    // Selecting and copying these cells must yield the original code, not the
+    // markers. textContent is exactly what the clipboard receives.
+    const cells = [...container.querySelectorAll("td.code")].map((c) => c.textContent);
+    expect(cells).toEqual(["\tif (x) return;", "    if (x) return;"]);
+  });
+
   it("does not mark whitespace on an ordinary change", () => {
     const [row] = rowsFor("@@ -1,1 +1,1 @@\n-  a = 1;\n+  a = 2;");
     const { container } = table(<DiffRow row={row} layout="split" />);

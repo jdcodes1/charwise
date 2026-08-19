@@ -1,27 +1,25 @@
 import type { ReactNode } from "react";
 import type { Segment } from "../diff";
 
+/**
+ * Make whitespace visible by tinting it, never by replacing it. The real
+ * characters stay in the DOM because a reader who selects and copies a line
+ * must get the original code back — a viewer that pastes back marker glyphs
+ * instead of tabs silently corrupts what it was built to help you read.
+ */
 function whitespaceMarked(text: string): ReactNode[] {
-  const parts: ReactNode[] = [];
-  let plain = "";
-  const flush = () => {
-    if (plain) parts.push(plain);
-    plain = "";
-  };
-  [...text].forEach((ch, index) => {
-    if (ch === "\t" || ch === " ") {
-      flush();
-      parts.push(
+  return text
+    .split(/(\s+)/)
+    .filter((part) => part !== "")
+    .map((part, index) =>
+      /^\s+$/.test(part) ? (
         <span className="ws" key={index}>
-          {ch === "\t" ? "→   " : "·"}
-        </span>,
-      );
-    } else {
-      plain += ch;
-    }
-  });
-  flush();
-  return parts;
+          {part}
+        </span>
+      ) : (
+        part
+      ),
+    );
 }
 
 export default function Segments({

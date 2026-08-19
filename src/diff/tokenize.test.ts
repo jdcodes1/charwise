@@ -26,4 +26,12 @@ describe("tokenize", () => {
   it("returns an empty array for an empty line", () => {
     expect(tokenize("")).toEqual([]);
   });
+
+  it("keeps an emoji as one token rather than two surrogate halves", () => {
+    expect(tokenize('x = "🎉";')).toEqual(["x", " ", "=", " ", '"', "🎉", '"', ";"]);
+  });
+
+  it("keeps two emoji that share a high surrogate separate and whole", () => {
+    expect(tokenize("😀😃")).toEqual(["😀", "😃"]);
+  });
 });

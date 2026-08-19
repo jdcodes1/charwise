@@ -78,6 +78,8 @@ td.code.empty {
 .chg { border-radius: 3px; padding: 1px 0; }
 .del .chg { background: var(--del-hi); color: var(--del-ink); box-shadow: 0 0 0 1px var(--del-hi); }
 .add .chg { background: var(--add-hi); color: var(--add-ink); box-shadow: 0 0 0 1px var(--add-hi); }
-.ws { color: var(--gut); }
-.del .chg .ws, .add .chg .ws { color: currentColor; opacity: 0.75; }
+/* Tinted, not substituted — the span still contains the real tab or spaces. */
+.ws { border-radius: 2px; }
+.del .chg .ws { background: color-mix(in srgb, var(--del-ink) 28%, transparent); }
+.add .chg .ws { background: color-mix(in srgb, var(--add-ink) 28%, transparent); }
 .scroll { overflow-x: auto; }
