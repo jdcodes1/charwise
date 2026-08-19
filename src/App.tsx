@@ -31,8 +31,15 @@ export default function App() {
   const [attempt, setAttempt] = useState(0);
   // Held here because an error unmounts Review and mounts a *fresh* PrLoader:
   // without this the URL field comes back blank and the next click reports
-  // "That is not a pull request URL" about a URL the user did type.
-  const [urlText, setUrlText] = useState("");
+  // "That is not a pull request URL" about a URL the user did type. Seeded
+  // from the hash for the same reason on the other path: a bookmarked PR
+  // opens with no token, and the identity the user already supplied has to
+  // reach the field or the only available action blames them for it.
+  // parsePrUrl accepts this shorthand, so it round-trips.
+  const [urlText, setUrlText] = useState(() => {
+    const fromHash = refFromHash();
+    return fromHash ? `${fromHash.owner}/${fromHash.repo}#${fromHash.number}` : "";
+  });
   const query = usePrQuery(ref, token, attempt);
 
   useEffect(() => {

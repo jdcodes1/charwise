@@ -124,6 +124,29 @@ describe("App", () => {
     expect(screen.getByLabelText(TOKEN_FIELD)).toHaveFocus();
   });
 
+  it("opens a bookmarked PR from a cold tab with only a token typed", async () => {
+    window.location.hash = "#" + encodeURIComponent("o/r#5");
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/files") ? respond(FILES) : respond(PR),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    renderApp();
+
+    // The PR identity is in the hash; without it in the field the only
+    // available action reports "That is not a pull request URL" about a URL
+    // the user never had a chance to type.
+    expect(screen.getByLabelText(URL_FIELD)).toHaveValue("o/r#5");
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await userEvent.type(screen.getByLabelText(TOKEN_FIELD), "good-token");
+    await userEvent.click(screen.getByRole("button", OPEN));
+
+    expect(await screen.findByText(/Raise the timeout/)).toBeInTheDocument();
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(0);
+    expect(screen.queryByText(/not a pull request URL/i)).toBeNull();
+  });
+
   it("shows the loader, not a spinner, for a deep link with no stored token", () => {
     window.location.hash = "#" + encodeURIComponent("o/r#5");
     const fetchMock = vi.fn();

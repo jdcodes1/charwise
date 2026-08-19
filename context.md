@@ -114,6 +114,12 @@ one PR costs 1 + ceil(files / 100) requests, and results are cached 5 minutes.
 
 ## Deliberately not built
 
+- Clearing the token field after a 401. `PrLoader.open` stores the token before
+  the request is made, so a rejected token is still in the field when the error
+  comes back. Considered and kept: a rejected token is usually a typo or a
+  stale-by-one-character paste, and leaving the value visible lets it be
+  corrected instead of retyped. The error names the field and the cursor is put
+  there, so nothing suggests the token was accepted.
 - Posting comments, approving, merging — review is still submitted on GitHub
 - Syntax highlighting
 - Local git repos, pasted diffs, file uploads
