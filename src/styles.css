@@ -83,3 +83,25 @@ td.code.empty {
 .del .chg .ws { background: color-mix(in srgb, var(--del-ink) 28%, transparent); }
 .add .chg .ws { background: color-mix(in srgb, var(--add-ink) 28%, transparent); }
 .scroll { overflow-x: auto; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.panel-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+.panel-bar .path { font-family: "JetBrains Mono", ui-monospace, monospace; }
+.count { font-variant-numeric: tabular-nums; }
+.add-count { color: var(--add-ink); }
+.del-count { color: var(--del-ink); }
+.viewed { margin-left: auto; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.too-large { margin: 0; padding: 14px; color: var(--muted); }
