@@ -65,3 +65,23 @@ describe("parsePatch", () => {
     expect(parsePatch("index abc..def 100644\n@@ -1,1 +1,1 @@\n-a\n+b")).toHaveLength(1);
   });
 });
+
+describe("parsePatch line endings", () => {
+  // A CRLF→LF change used to leave a bare carriage return in `text`, which
+  // refine then highlighted: two identical-looking lines marked changed with
+  // nothing visibly highlighted — the exact invisible change this app exists
+  // to surface.
+  it("strips the trailing carriage return and records it on the line", () => {
+    const [hunk] = parsePatch("@@ -1,1 +1,1 @@\n-const a = 1;\r\n+const a = 1;");
+    expect(hunk.lines[0].text).toBe("const a = 1;");
+    expect(hunk.lines[0].crlf).toBe(true);
+    expect(hunk.lines[1].text).toBe("const a = 1;");
+    expect(hunk.lines[1].crlf).toBe(false);
+  });
+
+  it("leaves a carriage return that is not at the end of the line alone", () => {
+    const [hunk] = parsePatch('@@ -1,1 +1,1 @@\n-const a = "x\ry";\n+const a = "z";');
+    expect(hunk.lines[0].text).toBe('const a = "x\ry";');
+    expect(hunk.lines[0].crlf).toBe(false);
+  });
+});

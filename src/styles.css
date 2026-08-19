@@ -93,6 +93,17 @@ td.gap {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.eol {
+  margin-left: 8px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  background: var(--surface-2);
+  color: var(--muted);
+  user-select: none;
+}
 .scroll { overflow-x: auto; }
 
 .panel {

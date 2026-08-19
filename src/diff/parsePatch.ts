@@ -25,15 +25,17 @@ export function parsePatch(patch: string): Hunk[] {
     if (raw.startsWith("\\")) continue;
 
     const marker = raw[0] ?? " ";
-    const text = raw.length > 0 ? raw.slice(1) : "";
+    const body = raw.length > 0 ? raw.slice(1) : "";
+    const crlf = body.endsWith("\r");
+    const text = crlf ? body.slice(0, -1) : body;
 
     let line: DiffLine;
     if (marker === "-") {
-      line = { type: "del", oldNumber: oldNo++, newNumber: null, text };
+      line = { type: "del", oldNumber: oldNo++, newNumber: null, text, crlf };
     } else if (marker === "+") {
-      line = { type: "add", oldNumber: null, newNumber: newNo++, text };
+      line = { type: "add", oldNumber: null, newNumber: newNo++, text, crlf };
     } else {
-      line = { type: "ctx", oldNumber: oldNo++, newNumber: newNo++, text };
+      line = { type: "ctx", oldNumber: oldNo++, newNumber: newNo++, text, crlf };
     }
     current.lines.push(line);
   }

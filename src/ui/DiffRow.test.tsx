@@ -92,3 +92,18 @@ describe("DiffRow gaps", () => {
     expect(container.querySelector("td.gap")?.getAttribute("colspan")).toBe("2");
   });
 });
+
+describe("DiffRow line endings", () => {
+  it("labels a line-ending-only change, which has nothing else to show", () => {
+    const [row] = rowsFor("@@ -1,1 +1,1 @@\n-const a = 1;\r\n+const a = 1;");
+    const { container } = table(<DiffRow row={row} layout="split" />);
+    expect(container.querySelectorAll(".chg")).toHaveLength(0);
+    expect([...container.querySelectorAll(".eol")].map((n) => n.textContent)).toEqual(["CRLF", "LF"]);
+  });
+
+  it("adds no line-ending label when both sides agree", () => {
+    const [row] = rowsFor("@@ -1,1 +1,1 @@\n-    timeout: 30_000,\n+    timeout: 60_000,");
+    const { container } = table(<DiffRow row={row} layout="split" />);
+    expect(container.querySelectorAll(".eol")).toHaveLength(0);
+  });
+});

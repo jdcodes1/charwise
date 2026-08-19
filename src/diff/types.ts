@@ -16,6 +16,13 @@ export interface DiffLine {
   newNumber: number | null;
   /** Line content without the leading +/-/space marker and without a newline. */
   text: string;
+  /**
+   * True when the source line ended CRLF. The carriage return is stripped from
+   * `text`: left in place it is diffed as a character, so a CRLF→LF change
+   * highlights a run nobody can see — the invisible change this app exists to
+   * surface, produced by the app itself.
+   */
+  crlf: boolean;
 }
 
 export interface Hunk {

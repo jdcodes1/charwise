@@ -3,8 +3,8 @@ import { buildRows, pairBlock } from "./pairLines";
 import { parsePatch } from "./parsePatch";
 import type { DiffLine } from "./types";
 
-const del = (text: string, n: number): DiffLine => ({ type: "del", oldNumber: n, newNumber: null, text });
-const add = (text: string, n: number): DiffLine => ({ type: "add", oldNumber: null, newNumber: n, text });
+const del = (text: string, n: number): DiffLine => ({ type: "del", oldNumber: n, newNumber: null, text, crlf: false });
+const add = (text: string, n: number): DiffLine => ({ type: "add", oldNumber: null, newNumber: n, text, crlf: false });
 
 describe("pairBlock", () => {
   it("pairs one deletion with one similar insertion", () => {
