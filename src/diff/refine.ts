@@ -1,4 +1,4 @@
-import { ISLAND_MAX, REFINE_THRESHOLD } from "./constants";
+import { ISLAND_MAX, REFINE_MAX_LINE, REFINE_THRESHOLD } from "./constants";
 import { lcsDiff, similarity } from "./lcs";
 import { tokenize } from "./tokenize";
 import type { Segment, SegmentKind } from "./types";
@@ -52,6 +52,16 @@ function charSegments(delText: string, addText: string): [Segment[], Segment[]] 
  * level inside any changed run whose two sides are similar enough to be worth it.
  */
 export function refinePair(oldLine: string, newLine: string): { left: Segment[]; right: Segment[] } {
+  // Both DPs below are O(n*m) in time and memory. A minified or generated line
+  // would allocate gigabytes, so past REFINE_MAX_LINE we degrade to whole-line
+  // highlighting rather than hang the tab.
+  if (oldLine.length > REFINE_MAX_LINE || newLine.length > REFINE_MAX_LINE) {
+    return {
+      left: oldLine ? [{ kind: "chg", text: oldLine }] : [],
+      right: newLine ? [{ kind: "chg", text: newLine }] : [],
+    };
+  }
+
   const ops = lcsDiff(tokenize(oldLine), tokenize(newLine));
   const left: Segment[] = [];
   const right: Segment[] = [];

@@ -82,6 +82,23 @@ describe("refinePair", () => {
     expect(joined(r.right)).toBe(b);
   });
 
+  it("degrades to whole-line highlighting past REFINE_MAX_LINE", () => {
+    const a = `const data = "${"x".repeat(3000)}";`;
+    const b = `const data = "${"y".repeat(3000)}";`;
+    const started = performance.now();
+    const r = refinePair(a, b);
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(r.left).toEqual([{ kind: "chg", text: a }]);
+    expect(r.right).toEqual([{ kind: "chg", text: b }]);
+  });
+
+  it("still refines a line exactly at the length limit", () => {
+    const pad = "x".repeat(1980);
+    const r = refinePair(`const a = 1; // ${pad}`, `const a = 2; // ${pad}`);
+    expect(changed(r.left)).toEqual(["1"]);
+    expect(changed(r.right)).toEqual(["2"]);
+  });
+
   it("handles an empty old line", () => {
     const r = refinePair("", "new");
     expect(r.left).toEqual([]);

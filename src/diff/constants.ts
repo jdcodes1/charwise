@@ -14,3 +14,11 @@ export const ISLAND_MAX = 3;
 
 /** Lines longer than this are truncated before the similarity DP runs. */
 export const SIMILARITY_MAX_LEN = 1000;
+
+/**
+ * Longest line `refinePair` will diff. Both the token DP and the character DP
+ * are O(n*m) in time and memory, so a minified or generated line would allocate
+ * gigabytes and hang the tab. Past this length the pair degrades to whole-line
+ * highlighting, which is what GitHub shows anyway.
+ */
+export const REFINE_MAX_LINE = 2000;
