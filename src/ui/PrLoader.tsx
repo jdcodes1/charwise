@@ -14,6 +14,7 @@ export default function PrLoader({
   const [token, setTokenValue] = useState(() => getToken() ?? "");
   const [remember, setRemember] = useState(() => isTokenRemembered());
   const [localError, setLocalError] = useState<string | null>(null);
+  const [cleared, setCleared] = useState(false);
   const [recent, setRecent] = useState(() => getRecentPrs());
 
   function open(ref: PrRef) {
@@ -36,6 +37,9 @@ export default function PrLoader({
     setTokenValue("");
     setRemember(false);
     setRecent([]);
+    // Without this the control looks like a no-op whenever there was nothing
+    // visible to clear — the worst possible feedback on a privacy control.
+    setCleared(true);
   }
 
   return (
@@ -52,6 +56,10 @@ export default function PrLoader({
       >
         <label>
           Pull request URL
+          {/* Deliberately type="text", not type="url": native constraint
+              validation would block submission before our own message could
+              render, and would reject the owner/repo#123 shorthand outright.
+              parsePrUrl is the real validation. */}
           <input
             type="text"
             value={url}
@@ -85,6 +93,11 @@ export default function PrLoader({
         <button type="button" className="link" onClick={clearEverything}>
           Clear local data
         </button>
+        {cleared && (
+          <span className="cleared" role="status">
+            Cleared.
+          </span>
+        )}
       </section>
 
       {recent.length > 0 && (

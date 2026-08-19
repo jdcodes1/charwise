@@ -53,6 +53,12 @@ describe("PrLoader", () => {
     expect(screen.getByLabelText(/token/i)).toHaveValue("");
   });
 
+  it("confirms that clearing happened even when nothing was stored", async () => {
+    render(<PrLoader onOpen={() => {}} />);
+    await userEvent.click(screen.getByRole("button", { name: /clear local data/i }));
+    expect(screen.getByRole("status")).toHaveTextContent("Cleared.");
+  });
+
   it("states the privacy guarantee", () => {
     render(<PrLoader onOpen={() => {}} />);
     expect(screen.getByText(/never leaves your browser/i)).toBeInTheDocument();
